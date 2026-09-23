@@ -1,14 +1,13 @@
-const config = {
-  paystackPublicKey: "pk_live_e440f2ef3197a5e86a27bef5c97c388bd6c35bf4",
-  supabasePublishableKey: "sb_publishable_jFtrAVjQMUqrBY_pzkYYyg_5SL2bB6U"
-};
-const postForm = document.querySelector("#postForm");
-const paymentForm = document.querySelector("#paymentForm");
-const schoolBoard = document.querySelector("#schoolBoard");
+const SUPABASE_URL = "https://smysfznhfhhercnvzetk.supabase.co";
+const SUPABASE_KEY = "sb_publishable_jFtrAVjQMUqrBY_pzkYYyg_5SL2bB6U";
+const POSTS_URL =
+  `${SUPABASE_URL}/rest/v1/school_posts`;
+
+const form = document.querySelector("#postForm");
+const search = document.querySelector("#search");
 const postsElement = document.querySelector("#posts");
 const message = document.querySelector("#message");
-const searchInput = document.querySelector("#search");
-const count = document.querySelector("#count");
+const refresh = document.querySelector("#refresh");
 
 let posts = [];
 
@@ -17,20 +16,25 @@ function showMessage(text) {
 }
 
 function renderPosts() {
-  const query = searchInput.value.trim().toLowerCase();
+  const query = search.value.trim().toLowerCase();
   const matches = posts.filter(post =>
     [
-      post.school, post.county, post.subcounty, post.level,
-      post.desiredCounty, post.desiredSchool
+      post.school,
+      post.county,
+      post.subcounty,
+      post.level,
+      post.desired_county,
+      post.desired_school
     ].some(value => String(value || "").toLowerCase().includes(query))
   );
 
-  count.textContent = `${matches.length} ${matches.length === 1 ? "post" : "posts"}`;
   postsElement.replaceChildren();
 
   if (!matches.length) {
     const empty = document.createElement("p");
-    empty.textContent = query ? "No schools match your search." : "No schools posted yet.";
+    empty.textContent = query
+      ? "No schools match your search."
+      : "No schools posted yet.";
     postsElement.append(empty);
     return;
   }
@@ -42,92 +46,75 @@ function renderPosts() {
     const level = document.createElement("small");
     level.textContent = post.level;
 
-    const name = document.createElement("h3");
-    name.textContent = post.school;
+    const school = document.createElement("h3");
+    school.textContent = post.school;
 
     const location = document.createElement("p");
     location.textContent = `${post.subcounty}, ${post.county}`;
 
-    const destination = document.createElement("div");
-    destination.className = "destination";
+    const destination = document.createElement("p");
+    destination.textContent =
+      `Looking for: ${post.desired_school}, ${post.desired_county}`;
 
-    const caption = document.createElement("small");
-    caption.textContent = "LOOKING FOR";
-
-    const desiredSchool = document.createElement("strong");
-    desiredSchool.textContent = post.desiredSchool;
-
-    const desiredCounty = document.createElement("small");
-    desiredCounty.textContent = `${post.desiredCounty} County`;
-
-    destination.append(caption, desiredSchool, desiredCounty);
-    card.append(level, name, location, destination);
+    card.append(level, school, location, destination);
     postsElement.append(card);
   }
 }
 
 async function loadPosts() {
-  try {
-    const response = await fetch("/api/posts", { credentials: "same-origin" });
+  showMessage("Loading schools...");
 
-    if (response.status === 403) {
-      schoolBoard.hidden = true;
-      paymentForm.hidden = false;
-      return;
-    }
-    if (!response.ok) throw new Error("Could not load school posts.");
+  try {
+    const response = await fetch(
+      `${POSTS_URL}?select=*&order=created_at.desc&limit=200`,
+      { headers: { apikey: SUPABASE_KEY } }
+    );
+
+    if (!response.ok) throw new Error("Could not load schools.");
 
     posts = await response.json();
-    schoolBoard.hidden = false;
-    paymentForm.hidden = true;
+    showMessage("");
     renderPosts();
   } catch (error) {
     showMessage(error.message);
   }
 }
 
-paymentForm.addEventListener("submit", async event => {
+form.addEventListener("submit", async event => {
   event.preventDefault();
-  const button = paymentForm.querySelector("button");
+
+  const button = form.querySelector("button");
   button.disabled = true;
   showMessage("");
 
   try {
-    const email = new FormData(paymentForm).get("email");
-    const response = await fetch("/api/payment/start", {
+    const data = Object.fromEntries(new FormData(form));
+
+    const response = await fetch(POSTS_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email })
+      headers: {
+        apikey: SUPABASE_KEY,
+        "Content-Type": "application/json",
+        Prefer: "return=minimal"
+      },
+      body: JSON.stringify({
+        school: data.school.trim(),
+        county: data.county.trim(),
+        subcounty: data.subcounty.trim(),
+        level: data.level,
+        desired_county: data.desiredCounty.trim(),
+        desired_school: data.desiredSchool.trim()
+      })
     });
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.error || "Could not start payment.");
 
-    window.location.assign(result.url);
-  } catch (error) {
-    showMessage(error.message);
-    button.disabled = false;
-  }
-});
+    if (!response.ok) {
+      const result = await response.json().catch(() => ({}));
+      throw new Error(result.message || "Could not post your school.");
+    }
 
-postForm.addEventListener("submit", async event => {
-  event.preventDefault();
-  const button = postForm.querySelector("button");
-  button.disabled = true;
-  showMessage("");
-
-  try {
-    const data = Object.fromEntries(new FormData(postForm));
-    const response = await fetch("/api/posts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data)
-    });
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.error || "Could not post your school.");
-
-    postForm.reset();
+    form.reset();
+    await loadPosts();
     showMessage("Your school has been posted.");
-    if (!schoolBoard.hidden) await loadPosts();
   } catch (error) {
     showMessage(error.message);
   } finally {
@@ -135,9 +122,6 @@ postForm.addEventListener("submit", async event => {
   }
 });
 
-searchInput.addEventListener("input", renderPosts);
-
-if (new URLSearchParams(location.search).get("payment") === "failed") {
-  showMessage("Payment was not confirmed. Please try again.");
-}
+search.addEventListener("input", renderPosts);
+refresh.addEventListener("click", loadPosts);
 loadPosts();
