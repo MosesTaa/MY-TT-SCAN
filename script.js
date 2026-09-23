@@ -1,12 +1,13 @@
 const SUPABASE_URL = "https://smysfznhfhhercnvzetk.supabase.co";
 const SUPABASE_KEY = "sb_publishable_jFtrAVjQMUqrBY_pzkYYyg_5SL2bB6U";
-const POSTS_URL =
-  `${SUPABASE_URL}/rest/v1/school_posts`;
+const POSTS_URL = `${SUPABASE_URL}/rest/v1/school_posts`;
 
 const form = document.querySelector("#postForm");
+const postButton = document.querySelector("#postButton");
 const search = document.querySelector("#search");
 const postsElement = document.querySelector("#posts");
 const message = document.querySelector("#message");
+const count = document.querySelector("#count");
 const refresh = document.querySelector("#refresh");
 
 let posts = [];
@@ -15,8 +16,20 @@ function showMessage(text) {
   message.textContent = text;
 }
 
+async function readError(response) {
+  const type = response.headers.get("content-type") || "";
+
+  if (type.includes("application/json")) {
+    const result = await response.json();
+    return result.message || result.error || `Request failed (${response.status}).`;
+  }
+
+  return `The server returned an unexpected response (${response.status}).`;
+}
+
 function renderPosts() {
   const query = search.value.trim().toLowerCase();
+
   const matches = posts.filter(post =>
     [
       post.school,
@@ -28,9 +41,11 @@ function renderPosts() {
     ].some(value => String(value || "").toLowerCase().includes(query))
   );
 
+  count.textContent =
+    `${matches.length} ${matches.length === 1 ? "post" : "posts"}`;
   postsElement.replaceChildren();
 
-  if (!matches.length) {
+  if (matches.length === 0) {
     const empty = document.createElement("p");
     empty.textContent = query
       ? "No schools match your search."
@@ -62,29 +77,33 @@ function renderPosts() {
 }
 
 async function loadPosts() {
-  showMessage("Loading schools...");
+  refresh.disabled = true;
+  showMessage("Loading schools…");
 
   try {
     const response = await fetch(
-      `${POSTS_URL}?select=*&order=created_at.desc&limit=200`,
+      `${POSTS_URL}?select=school,county,subcounty,level,desired_county,desired_school,created_at&order=created_at.desc&limit=200`,
       { headers: { apikey: SUPABASE_KEY } }
     );
 
-    if (!response.ok) throw new Error("Could not load schools.");
+    if (!response.ok) throw new Error(await readError(response));
 
-    posts = await response.json();
+    const result = await response.json();
+    if (!Array.isArray(result)) throw new Error("Unexpected school data.");
+
+    posts = result;
     showMessage("");
     renderPosts();
   } catch (error) {
-    showMessage(error.message);
+    showMessage(error.message || "Could not load schools.");
+  } finally {
+    refresh.disabled = false;
   }
 }
 
 form.addEventListener("submit", async event => {
   event.preventDefault();
-
-  const button = form.querySelector("button");
-  button.disabled = true;
+  postButton.disabled = true;
   showMessage("");
 
   try {
@@ -107,18 +126,15 @@ form.addEventListener("submit", async event => {
       })
     });
 
-    if (!response.ok) {
-      const result = await response.json().catch(() => ({}));
-      throw new Error(result.message || "Could not post your school.");
-    }
+    if (!response.ok) throw new Error(await readError(response));
 
     form.reset();
     await loadPosts();
     showMessage("Your school has been posted.");
   } catch (error) {
-    showMessage(error.message);
+    showMessage(error.message || "Could not post your school.");
   } finally {
-    button.disabled = false;
+    postButton.disabled = false;
   }
 });
 
