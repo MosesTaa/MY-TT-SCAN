@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MY TT SCAN | Teacher Transfer Board</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <span class="brand-mark">MY</span>
+      <div><strong>MY <em>TT SCAN</em></strong><small>TEACHER TRANSFER BOARD</small></div>
+    </div>
+    <a href="#post">Post a school</a>
+  </header>
+
+  <main class="shell">
+    <div class="intro">
+      <p class="eyebrow">TEACHER SCHOOL POSTS</p>
+      <h1>Find a school transfer match.</h1>
+      <p>Share your current school and preferred destination.</p>
+    </div>
+
+    <div class="columns">
+      <section class="panel" id="post">
+        <h2>01 · Post your school</h2>
+        <form id="postForm">
+          <h3>CURRENT SCHOOL</h3>
+          <label>School name <input name="school" maxlength="100" required></label>
+          <div class="two">
+            <label>County <input name="county" maxlength="100" required></label>
+            <label>Sub-county <input name="subcounty" maxlength="100" required></label>
+          </div>
+          <label>School level
+            <select name="level">
+              <option>Primary</option>
+              <option>Junior secondary</option>
+              <option>Secondary</option>
+            </select>
+          </label>
+
+          <h3>PREFERRED DESTINATION</h3>
+          <label>Preferred county <input name="desiredCounty" maxlength="100" required></label>
+          <label>Preferred school or area <input name="desiredSchool" maxlength="100" required></label>
+          <button type="submit">Post school →</button>
+          <p class="hint">Do not include personal contact details in school names.</p>
+        </form>
+      </section>
+
+      <section class="panel" id="browse">
+        <h2>02 · Browse schools</h2>
+        <p id="message" role="status" aria-live="polite"></p>
+
+        <form id="paymentForm" class="payment">
+          <p>Pay <strong>KES 5</strong> to browse posted schools. Access lasts 24 hours on this device.</p>
+          <label>Email for payment
+            <input type="email" name="email" placeholder="you@example.com" required>
+          </label>
+          <button type="submit">Browse schools · KES 5 →</button>
+        </form>
+
+        <div id="schoolBoard" hidden>
+          <label class="search-label">Search schools
+            <input id="search" type="search" placeholder="School, county or level">
+          </label>
+          <p id="count" class="hint"></p>
+          <div id="posts" class="posts"></div>
+        </div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>
