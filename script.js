@@ -21,7 +21,14 @@ function validWhatsAppNumber(number) {
   return /^\+254[17][0-9]{8}$/.test(number);
 }
 
-// Prevent spaces from being entered or pasted into the field.
+function subjectList(value) {
+  return String(value || "")
+    .split(",")
+    .map(subject => subject.trim())
+    .filter(Boolean);
+}
+
+// Remove spaces if someone types or pastes them into the WhatsApp field.
 whatsappInput.addEventListener("input", () => {
   whatsappInput.value = whatsappInput.value.replace(/\s/g, "");
 });
@@ -46,6 +53,7 @@ function renderPosts() {
       post.county,
       post.subcounty,
       post.level,
+      post.subjects,
       post.desired_county,
       post.desired_school
     ].some(value => String(value || "").toLowerCase().includes(query))
@@ -53,6 +61,7 @@ function renderPosts() {
 
   count.textContent =
     `${matches.length} ${matches.length === 1 ? "post" : "posts"}`;
+
   postsElement.replaceChildren();
 
   if (matches.length === 0) {
@@ -69,27 +78,40 @@ function renderPosts() {
     card.className = "post";
 
     const level = document.createElement("small");
-    level.textContent = post.level;
+    level.textContent = post.level || "";
 
     const school = document.createElement("h3");
-    school.textContent = post.school;
+    school.textContent = post.school || "";
 
     const location = document.createElement("p");
-    location.textContent = `${post.subcounty}, ${post.county}`;
+    location.textContent = `${post.subcounty || ""}, ${post.county || ""}`;
+
+    const subjects = document.createElement("p");
+    subjects.className = "subjects";
+    subjects.textContent = post.subjects
+      ? `Subjects: ${post.subjects}`
+      : "Subjects: Not provided";
 
     const destination = document.createElement("p");
     destination.textContent =
-      `Looking for: ${post.desired_school}, ${post.desired_county}`;
+      `Looking for: ${post.desired_school || ""}, ${post.desired_county || ""}`;
 
-    card.append(level, school, location, destination);
+    card.append(level, school, location, subjects, destination);
 
     if (validWhatsAppNumber(post.whatsapp_number || "")) {
+      const firstSubject = subjectList(post.subjects)[0];
+      const greeting = firstSubject
+        ? `Hi fellow ${firstSubject} teacher. I saw your post on Teachers transfer APP`
+        : "Hi fellow teacher. I saw your post on Teachers transfer APP";
+
       const chatLink = document.createElement("a");
       chatLink.className = "whatsapp-link";
-      chatLink.href = `https://wa.me/${post.whatsapp_number.slice(1)}`;
+      chatLink.href =
+        `https://wa.me/${post.whatsapp_number.slice(1)}?text=${encodeURIComponent(greeting)}`;
       chatLink.target = "_blank";
       chatLink.rel = "noopener noreferrer";
       chatLink.textContent = "Click here to chat with the person who posted";
+
       card.append(chatLink);
     }
 
@@ -103,7 +125,7 @@ async function loadPosts() {
 
   try {
     const response = await fetch(
-      `${POSTS_URL}?select=school,county,subcounty,level,desired_county,desired_school,whatsapp_number,created_at&order=created_at.desc&limit=200`,
+      `${POSTS_URL}?select=school,county,subcounty,level,subjects,desired_county,desired_school,whatsapp_number,created_at&order=created_at.desc&limit=200`,
       { headers: { apikey: SUPABASE_KEY } }
     );
 
@@ -128,6 +150,13 @@ form.addEventListener("submit", async event => {
 
   const data = Object.fromEntries(new FormData(form));
   const number = data.whatsapp;
+  const subjects = subjectList(data.subjects);
+
+  if (subjects.length === 0) {
+    showMessage("Enter at least one subject you teach.");
+    document.querySelector("#subjects").focus();
+    return;
+  }
 
   if (!validWhatsAppNumber(number)) {
     showMessage(
@@ -152,6 +181,7 @@ form.addEventListener("submit", async event => {
         county: data.county.trim(),
         subcounty: data.subcounty.trim(),
         level: data.level,
+        subjects: subjects.join(", "),
         desired_county: data.desiredCounty.trim(),
         desired_school: data.desiredSchool.trim(),
         whatsapp_number: number
