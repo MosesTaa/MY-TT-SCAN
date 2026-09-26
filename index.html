@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>MY TT SCAN | Teacher Transfer Board</title>
-  <link rel="stylesheet" href="style.css?v=4">
-  <script src="script.js?v=4" defer></script>
+  <link rel="stylesheet" href="style.css?v=5">
+  <script src="script.js?v=5" defer></script>
 </head>
 <body>
   <header class="top">
@@ -53,6 +53,19 @@
             <option>Secondary</option>
           </select>
 
+          <h3>SUBJECTS</h3>
+
+          <label for="subjects">Subjects you teach</label>
+          <input
+            id="subjects"
+            name="subjects"
+            type="text"
+            maxlength="150"
+            placeholder="Mathematics, Physics"
+            required
+          >
+          <p class="hint">Separate multiple subjects with commas. The first subject will appear in the WhatsApp greeting.</p>
+
           <h3>PREFERRED DESTINATION</h3>
 
           <label for="desiredCounty">Preferred county</label>
@@ -92,7 +105,7 @@
         </div>
 
         <label for="search">Search posts</label>
-        <input id="search" type="search" placeholder="School, county or level">
+        <input id="search" type="search" placeholder="School, county, level or subject">
 
         <p id="message" role="status" aria-live="polite"></p>
         <p id="count" class="hint"></p>
