@@ -4,13 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>MY TT SCAN | Teacher Transfer Board</title>
-  <link rel="stylesheet" href="style.css?v=3">
-  <script src="script.js?v=3" defer></script>
+  <link rel="stylesheet" href="style.css?v=4">
+  <script src="script.js?v=4" defer></script>
 </head>
 <body>
   <header class="top">
     <div class="brand">
-      <span class="mark">MY</span>
+      <span class="brand-mark">MY</span>
       <div>
         <strong>MY <em>TT SCAN</em></strong>
         <small>TEACHER TRANSFER BOARD</small>
@@ -60,6 +60,24 @@
 
           <label for="desiredSchool">Preferred school or area</label>
           <input id="desiredSchool" name="desiredSchool" maxlength="100" required>
+
+          <h3>CONTACT</h3>
+
+          <label for="whatsapp">WhatsApp number</label>
+          <input
+            id="whatsapp"
+            name="whatsapp"
+            type="tel"
+            inputmode="tel"
+            autocomplete="tel"
+            placeholder="+254712345678"
+            pattern="\+254[17][0-9]{8}"
+            minlength="13"
+            maxlength="13"
+            title="Enter +254 followed by 9 digits, without spaces. Example: +254712345678"
+            required
+          >
+          <p class="hint">Use the format +254712345678 with no spaces. Your WhatsApp contact link will be visible to everyone browsing posts.</p>
 
           <button id="postButton" type="submit">Post school →</button>
         </form>
