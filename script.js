@@ -9,12 +9,22 @@ const postsElement = document.querySelector("#posts");
 const message = document.querySelector("#message");
 const count = document.querySelector("#count");
 const refresh = document.querySelector("#refresh");
+const whatsappInput = document.querySelector("#whatsapp");
 
 let posts = [];
 
 function showMessage(text) {
   message.textContent = text;
 }
+
+function validWhatsAppNumber(number) {
+  return /^\+254[17][0-9]{8}$/.test(number);
+}
+
+// Prevent spaces from being entered or pasted into the field.
+whatsappInput.addEventListener("input", () => {
+  whatsappInput.value = whatsappInput.value.replace(/\s/g, "");
+});
 
 async function readError(response) {
   const type = response.headers.get("content-type") || "";
@@ -72,6 +82,17 @@ function renderPosts() {
       `Looking for: ${post.desired_school}, ${post.desired_county}`;
 
     card.append(level, school, location, destination);
+
+    if (validWhatsAppNumber(post.whatsapp_number || "")) {
+      const chatLink = document.createElement("a");
+      chatLink.className = "whatsapp-link";
+      chatLink.href = `https://wa.me/${post.whatsapp_number.slice(1)}`;
+      chatLink.target = "_blank";
+      chatLink.rel = "noopener noreferrer";
+      chatLink.textContent = "Click here to chat with the person who posted";
+      card.append(chatLink);
+    }
+
     postsElement.append(card);
   }
 }
@@ -82,7 +103,7 @@ async function loadPosts() {
 
   try {
     const response = await fetch(
-      `${POSTS_URL}?select=school,county,subcounty,level,desired_county,desired_school,created_at&order=created_at.desc&limit=200`,
+      `${POSTS_URL}?select=school,county,subcounty,level,desired_county,desired_school,whatsapp_number,created_at&order=created_at.desc&limit=200`,
       { headers: { apikey: SUPABASE_KEY } }
     );
 
@@ -103,12 +124,22 @@ async function loadPosts() {
 
 form.addEventListener("submit", async event => {
   event.preventDefault();
-  postButton.disabled = true;
   showMessage("");
 
-  try {
-    const data = Object.fromEntries(new FormData(form));
+  const data = Object.fromEntries(new FormData(form));
+  const number = data.whatsapp;
 
+  if (!validWhatsAppNumber(number)) {
+    showMessage(
+      "Enter a WhatsApp number starting with +254, followed by 9 digits, without spaces. Example: +254712345678."
+    );
+    whatsappInput.focus();
+    return;
+  }
+
+  postButton.disabled = true;
+
+  try {
     const response = await fetch(POSTS_URL, {
       method: "POST",
       headers: {
@@ -122,7 +153,8 @@ form.addEventListener("submit", async event => {
         subcounty: data.subcounty.trim(),
         level: data.level,
         desired_county: data.desiredCounty.trim(),
-        desired_school: data.desiredSchool.trim()
+        desired_school: data.desiredSchool.trim(),
+        whatsapp_number: number
       })
     });
 
