@@ -140,6 +140,11 @@ button:disabled { opacity: .55; cursor: wait; }
 .post p { margin: 3px 0; }
 .post small { color: var(--muted); }
 
+.post .subjects {
+  margin: 10px 0 6px;
+  font-weight: bold;
+}
+
 .whatsapp-link {
   display: inline-block;
   margin-top: 12px;
